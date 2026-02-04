@@ -1,24 +1,57 @@
 version: "3.8"
 
 services:
-  app1:
-    build: .
-    container_name: app1
-    restart: always
 
-  app2:
+  
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    ports:
+      - "4000:9090"
+    volumes:
+      - /etc/prometheus/prometheus.yaml
+
+    networks:
+      - monitoramento
+
+  app:
     build: .
-    container_name: app2
-    restart: always
+    container_name: app
+    ports:
+      - "9000:9000"
+    networks:
+      - monitoramento
 
   nginx:
-    image: nginx:alpine
+    image: nginx
     container_name: nginx
     ports:
       - "80:80"
-    volumes:
-      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+
+    environment:
+      - NGINX_HOST=israel.com
+      - NGINX_PORT=80
+    networks:
+      - monitoramento
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - "3000:3000"
     depends_on:
-      - app1
-      - app2
-    restart: always
+      - prometheus
+
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: 32572713A
+    networks:
+      - monitoramento
+
+networks:
+  monitoramento:
+    driver: bridge
+
+
+
+  
