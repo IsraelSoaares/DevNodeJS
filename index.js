@@ -26,18 +26,25 @@ app.get("/", (req, res) => {
 
 
 // Crie métricas
-const collectDefaultMetrics = client.collectDefaultMetrics;
-collectDefaultMetrics({ timeout: 5000 });
+client.collectDefaultMetrics();
 
-app.get('/metrics', async (req, res) => {
-    res.set('Content-Type', register.contentType);
-    res.end(await register.metrics());
+const httpRequestsTotal = new client.Histogram({
+  name: "http_request_duration_seconds",
+  help: "Duração das requisições HTTP",
+  labelNames: ["methods", "route", "status"],
 });
 
-
 app.use((req, res, next) => {
-  httpRequestsTotal.inc({ method: req.method, endpoint: req.path });
+  const end = httpRequestDuration.startTimer();
+  res.on("finish", () => {
+    end({ method: req.method, route: req.route?.path || req.path, status: res.statusCode });
+  });
   next();
+});
+
+app.get("/metrics", async (req, res) => {
+  res.set("Content-Type", client.register.contentType);
+  res.end(await client.register.metrics());
 });
 
 app.listen(9090, "0.0.0.0",  () => {

@@ -1,10 +1,57 @@
-version: "3.9"
+version: "3.8"
 
 services:
+
+  
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    ports:
+      - "4000:9090"
+    volumes:
+      - /etc/prometheus/prometheus.yaml
+
+    networks:
+      - monitoramento
+
   app:
     build: .
-    container_name: app_node_sqlite
+    container_name: app
     ports:
-      - "9090:9090"
-    volumes:
-      - ./data:/app/data
+      - "9000:9000"
+    networks:
+      - monitoramento
+
+  nginx:
+    image: nginx
+    container_name: nginx
+    ports:
+      - "80:80"
+
+    environment:
+      - NGINX_HOST=israel.com
+      - NGINX_PORT=80
+    networks:
+      - monitoramento
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: 32572713A
+    networks:
+      - monitoramento
+
+networks:
+  monitoramento:
+    driver: bridge
+
+
+
+  
